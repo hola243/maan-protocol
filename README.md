@@ -34,4 +34,3 @@ Rules-based training and nutrition plans that adjust every week from a 2-minute 
 - `supabase/schema.sql`, database tables and row-level security (users can only ever read/write their own rows)
 
 Not medical advice. Users should clear new training programs with their physician.
-# maan-protocol
