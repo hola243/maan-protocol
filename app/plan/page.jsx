@@ -32,7 +32,7 @@ export default function PlanPage() {
   function toEngineProfile(p) {
     return {
       name: p.name, age: p.age, sex: p.sex, weightLb: +p.weight_lb, objective: p.objective,
-      daysPerWeek: p.days_per_week, sportPerWeek: p.sport_per_week, equipment: p.equipment, experience: p.experience || 'consistent', injuryText: p.injury_text,
+      daysPerWeek: p.days_per_week, sportPerWeek: p.sport_per_week, activity: p.activity_type || '', equipment: p.equipment, experience: p.experience || 'consistent', injuryText: p.injury_text,
     };
   }
 
