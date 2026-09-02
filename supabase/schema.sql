@@ -12,6 +12,7 @@ create table if not exists profiles (
   sport_per_week int not null check (sport_per_week between 0 and 3),
   equipment text not null check (equipment in ('gym','db','body')),
   experience text default 'consistent' check (experience in ('new','returning','consistent')),
+  activity_type text,
   injury_text text default '',
   slack_daily boolean default false,
   slack_handle text default '',
