@@ -33,6 +33,7 @@ export default function PlanPage() {
     return {
       name: p.name, age: p.age, sex: p.sex, weightLb: +p.weight_lb, objective: p.objective,
       daysPerWeek: p.days_per_week, sportPerWeek: p.sport_per_week, activity: p.activity_type || '', equipment: p.equipment, experience: p.experience || 'consistent', injuryText: p.injury_text,
+      schedule: p.schedule || null,
     };
   }
 
@@ -141,13 +142,22 @@ export default function PlanPage() {
 
       {plan.days.map(x => (
         <div key={x.d} className="card day" id={`day-${x.d}`}>
-          <div className="when"><div className="dow">{x.d}</div></div>
+          <div className="when"><div className="dow">{x.d}</div>{x.time && <div className="tod">{x.time}</div>}</div>
           <div className="body">
             <h3>{x.title} <span className="pill"><span className="pdot" style={{ background: DOT[x.type] }} />{x.tag} day</span></h3>
             <ul>{x.items.map((i, k) => {
               const vid = x.type === 'lift' ? videoUrlFor(i.t) : null;
               return <li key={k} className={i.swap ? 'swap' : ''}>{i.t}{vid && <> <a className="vid" href={vid} target="_blank" rel="noopener sponsored">Video</a></>}</li>;
             })}</ul>
+            {x.meals && (
+              <div className="meals">
+                <div className="meals-head">Meals</div>
+                <div className="meal"><span className="ml">Breakfast</span><span>{x.meals.breakfast}</span></div>
+                <div className="meal"><span className="ml">Lunch</span><span>{x.meals.lunch}</span></div>
+                <div className="meal"><span className="ml">Dinner</span><span>{x.meals.dinner}</span></div>
+                <div className="meal-carb">{x.meals.carbNote}</div>
+              </div>
+            )}
           </div>
         </div>
       ))}
