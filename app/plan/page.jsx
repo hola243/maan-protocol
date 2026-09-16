@@ -142,7 +142,7 @@ export default function PlanPage() {
 
       {plan.days.map(x => (
         <div key={x.d} className="card day" id={`day-${x.d}`}>
-          <div className="when"><div className="dow">{x.d}</div>{x.time && <div className="tod">{x.time}</div>}</div>
+          <div className="when"><div className="dow">{x.d}</div></div>
           <div className="body">
             <h3>{x.title} <span className="pill"><span className="pdot" style={{ background: DOT[x.type] }} />{x.tag} day</span></h3>
             <ul>{x.items.map((i, k) => {
