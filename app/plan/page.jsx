@@ -19,7 +19,7 @@ function programWeekFrom(startISO) {
 
 // Small, dependency-free line chart. One y-axis per chart (never dual-axis):
 // series sharing this chart must share a scale. Renders on a white card.
-function TrendChart({ series, unit, decimals = 1, height = 150, invertGood = false }) {
+function TrendChart({ series, unit, decimals = 1, height = 150 }) {
   const [hover, setHover] = useState(null);
   const W = 320, H = height, padL = 34, padR = 12, padT = 12, padB = 22;
   const n = series[0].data.length;
@@ -91,6 +91,19 @@ function TrendChart({ series, unit, decimals = 1, height = 150, invertGood = fal
   );
 }
 
+const ICON = {
+  today: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19" /></svg>,
+  plan: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5l11 11M4 8l-1 1 3 3M20 16l1-1-3-3M8 4L7 3 4 6l1 1M16 20l1 1 3-3-1-1" /></svg>,
+  nutrition: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3v7a2 2 0 0 0 2 2h0V3M6 12v9M18 3c-1.5 0-3 2-3 5s1.5 4 3 4v9" /></svg>,
+  progress: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 5-7" /></svg>,
+};
+const TABS = [
+  { id: 'today', label: 'Today' },
+  { id: 'plan', label: 'Plan' },
+  { id: 'nutrition', label: 'Food' },
+  { id: 'progress', label: 'Progress' },
+];
+
 export default function PlanPage() {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
@@ -99,6 +112,8 @@ export default function PlanPage() {
   const [showCheckin, setShowCheckin] = useState(false);
   const [ci, setCi] = useState({ weight: '', waist: '', energy: '', sleep: '', soreness: '', pain: '' });
   const [err, setErr] = useState('');
+  const [tab, setTab] = useState('today');
+  const [menu, setMenu] = useState(false);
 
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
@@ -166,7 +181,7 @@ export default function PlanPage() {
     w.print();
   }
 
-  if (!plan) return <header><h1>Loading</h1></header>;
+  if (!plan) return <div className="planapp"><main className="screen"><h1 className="scr-h1" style={{ padding: '30px 0' }}>Loading…</h1></main></div>;
 
   const mon = new Date(); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
@@ -180,143 +195,225 @@ export default function PlanPage() {
   const dW = first && last && checkins.length > 1 ? (last.weight - first.weight).toFixed(1) : null;
   const dWa = first && last && checkins.length > 1 ? (last.waist - first.waist).toFixed(1) : null;
 
-  return (
-    <>
-      <header>
-        <div className="kicker">Protocol by MAAN.life · {plan.name}</div>
-        <h1>Week {plan.week}{plan.isDeload ? ' · DL' : ''}</h1>
-        <div className="sub">{fmt(mon)} – {fmt(sun)}, {sun.getFullYear()} · {phase}</div>
-        <div className="sub">
-          Adjusts every week from your Sunday check-in.{profile.slack_daily && profile.slack_handle ? ` Daily plan to ${profile.slack_handle} on Slack.` : ''} {' '}
-          <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => router.push('/onboard')}>Edit profile</a>{' · '}
-          <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={signOut}>Sign out</a>
-        </div>
-      </header>
+  const todayIdx = (new Date().getDay() + 6) % 7;
+  const todayDay = plan.days[todayIdx] || plan.days[0];
+  const isSunday = todayIdx === 6;
+  const initials = (plan.name || 'You').slice(0, 1).toUpperCase();
 
-      <div className="tiles">
-        <div className="tile"><div className="label">Lifting</div><div className="value">{plan.lifts} {plan.lifts === 1 ? 'DAY' : 'DAYS'}</div><div className="hint">{liftDayNames}</div></div>
-        <div className="tile"><div className="label">Sport</div><div className="value">{sportDays.length} {sportDays.length === 1 ? 'DAY' : 'DAYS'}</div><div className="hint">{sportDays.map(d => d.d).join(' · ') || 'add one anytime'}</div></div>
-        <div className="tile"><div className="label">Full rest</div><div className="value">SUNDAY</div><div className="hint">{plan.isRebuild ? 'restorative yoga + check-in' : 'rest + check-in'}</div></div>
-        <div className="tile"><div className="label">Target pace</div><div className="value">{paceTile[0]}</div><div className="hint">{paceTile[1]}</div></div>
-      </div>
+  const wkLabel = x => plan.isDeload && x.type === 'lift' ? 'Deload' : x.type === 'lift' ? (plan.isRebuild ? `Lift ${x.i + 1}` : ['Lift A', 'Lift B', 'Lift C'][x.i]) : x.type === 'sport' ? 'Sport' : x.type === 'move' ? 'Move' : x.type === 'rest' ? (plan.isRebuild ? 'Restore' : 'Rest') : 'Off';
 
-      {dW !== null && (
-        <div className="tiles">
-          <div className="tile"><div className="label">Weight change</div><div className={`value ${+dW <= 0 ? 'up' : 'down'}`}>{+dW > 0 ? '+' : ''}{dW} LB</div><div className="hint">since first check-in</div></div>
-          <div className="tile"><div className="label">Waist change</div><div className={`value ${+dWa <= 0 ? 'up' : 'down'}`}>{+dWa > 0 ? '+' : ''}{dWa} IN</div><div className="hint">the honest scoreboard</div></div>
-          <div className="tile"><div className="label">Check-ins</div><div className="value">{checkins.length}</div><div className="hint">weeks logged</div></div>
-        </div>
-      )}
-
-      <div className="card">
-        <h3>Your progress</h3>
-        {checkins.length < 2 ? (
-          <p className="muted">Log two Sunday check-ins and your trend lines show up here. Waist is the one that counts, so measure the same spot at the navel each week.</p>
-        ) : (() => {
-          const lab = c => new Date(c.created_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
-          const waist = [{ name: 'Waist', color: '#0d9488', data: checkins.map(c => ({ v: +c.waist, label: lab(c) })) }];
-          const weight = [{ name: 'Weight', color: '#d97706', data: checkins.map(c => ({ v: +c.weight, label: lab(c) })) }];
-          const feel = [
-            { name: 'Energy', color: '#0d9488', data: checkins.map(c => ({ v: +c.energy, label: lab(c) })) },
-            { name: 'Sleep', color: '#7c3aed', data: checkins.map(c => ({ v: +c.sleep, label: lab(c) })) },
-          ];
-          return (
-            <>
-              <div className="chart-block"><div className="chart-cap">Waist · inches <span>the honest scoreboard</span></div><TrendChart series={waist} unit="in" /></div>
-              <div className="chart-block"><div className="chart-cap">Morning weight · lb</div><TrendChart series={weight} unit="lb" /></div>
-              <div className="chart-block"><div className="chart-cap">How you felt · 1–5</div><TrendChart series={feel} decimals={0} height={130} /></div>
-              <p className="small">Each point is a Sunday check-in. Hover a line to read the week&apos;s number.</p>
-            </>
-          );
-        })()}
-      </div>
-
-      <div className="wkstrip">
-        {plan.days.map(x => (
-          <div key={x.d} className="wkday" onClick={() => document.getElementById(`day-${x.d}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
-            <div className="d">{x.d}</div>
-            <div className="t">{plan.isDeload && x.type === 'lift' ? 'Deload' : x.type === 'lift' ? (plan.isRebuild ? `Lift ${x.i + 1}` : ['Lift A', 'Lift B', 'Lift C'][x.i]) : x.type === 'sport' ? 'Sport' : x.type === 'move' ? 'Move' : x.type === 'rest' ? (plan.isRebuild ? 'Restore' : 'Rest') : 'Off'}</div>
-            <div className="dot" style={{ background: DOT[x.type] }} />
+  const renderDay = (x, today = false) => (
+    <div key={x.d} className={`card day${today ? ' istoday' : ''}`} id={`day-${x.d}`}>
+      <div className="when"><div className="dow">{x.d}</div>{today && <span className="todaytag">Today</span>}</div>
+      <div className="body">
+        <h3>{x.title} <span className="pill"><span className="pdot" style={{ background: DOT[x.type] }} />{x.tag} day</span></h3>
+        <ul>{x.items.map((i, k) => {
+          const vid = x.type === 'lift' ? videoUrlFor(i.t) : null;
+          return <li key={k} className={i.swap ? 'swap' : ''}>{i.t}{vid && <> <a className="vid" href={vid} target="_blank" rel="noopener sponsored">Video</a></>}</li>;
+        })}</ul>
+        {x.meals && (
+          <div className="meals">
+            <div className="meals-head">Meals</div>
+            <div className="meal"><span className="ml">Breakfast</span><span>{x.meals.breakfast}</span></div>
+            <div className="meal"><span className="ml">Lunch</span><span>{x.meals.lunch}</span></div>
+            <div className="meal"><span className="ml">Dinner</span><span>{x.meals.dinner}</span></div>
+            <div className="meal-carb">{x.meals.carbNote}</div>
           </div>
-        ))}
+        )}
       </div>
+    </div>
+  );
 
-      <div className="note">{plan.name}, here&apos;s Week {plan.week}. {plan.rirLine} Protein target: {plan.protein} g/day ({plan.palms.toLowerCase()}). {plan.steps}.</div>
-
-      {plan.injuries.length > 0 && (
-        <div className="card">
-          <h3>Adjusted for your injuries</h3>
-          <p className="muted">Working around: {plan.injuries.join(', ')}. Swapped movements are marked in orange. Pain-free range only; anything new goes in Sunday&apos;s check-in. Persistent pain is physician territory.</p>
-        </div>
-      )}
-
+  const wkStrip = (jump) => (
+    <div className="wkstrip">
       {plan.days.map(x => (
-        <div key={x.d} className="card day" id={`day-${x.d}`}>
-          <div className="when"><div className="dow">{x.d}</div></div>
-          <div className="body">
-            <h3>{x.title} <span className="pill"><span className="pdot" style={{ background: DOT[x.type] }} />{x.tag} day</span></h3>
-            <ul>{x.items.map((i, k) => {
-              const vid = x.type === 'lift' ? videoUrlFor(i.t) : null;
-              return <li key={k} className={i.swap ? 'swap' : ''}>{i.t}{vid && <> <a className="vid" href={vid} target="_blank" rel="noopener sponsored">Video</a></>}</li>;
-            })}</ul>
-            {x.meals && (
-              <div className="meals">
-                <div className="meals-head">Meals</div>
-                <div className="meal"><span className="ml">Breakfast</span><span>{x.meals.breakfast}</span></div>
-                <div className="meal"><span className="ml">Lunch</span><span>{x.meals.lunch}</span></div>
-                <div className="meal"><span className="ml">Dinner</span><span>{x.meals.dinner}</span></div>
-                <div className="meal-carb">{x.meals.carbNote}</div>
-              </div>
-            )}
-          </div>
+        <div key={x.d} className={`wkday${x.d === todayDay.d ? ' now' : ''}`} onClick={() => jump(x.d)}>
+          <div className="d">{x.d}</div>
+          <div className="t">{wkLabel(x)}</div>
+          <div className="dot" style={{ background: DOT[x.type] }} />
         </div>
       ))}
+    </div>
+  );
 
-      <div className="card">
-        <h3>Your plate, every meal</h3>
-        <p className="muted">{plan.plate}</p>
+  const checkinCard = (
+    <div className="card">
+      <h3>Sunday check-in: 2 minutes</h3>
+      <p className="small" style={{ marginTop: 0 }}>Waist and weight drive your plan and your progress charts. Same spot at the navel, relaxed, morning.</p>
+      <div className="grid2">
+        <div><label>Morning weight, 2–3 day avg (lb)</label><input type="number" step="0.1" value={ci.weight} onChange={e => setCi({ ...ci, weight: e.target.value })} /></div>
+        <div><label>Waist at navel (in)</label><input type="number" step="0.1" value={ci.waist} onChange={e => setCi({ ...ci, waist: e.target.value })} /></div>
+        <div><label>Energy (1–5)</label><select value={ci.energy} onChange={e => setCi({ ...ci, energy: e.target.value })}><option value="">–</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></div>
+        <div><label>Sleep (1–5)</label><select value={ci.sleep} onChange={e => setCi({ ...ci, sleep: e.target.value })}><option value="">–</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></div>
+        <div><label>Soreness (1–5)</label><select value={ci.soreness} onChange={e => setCi({ ...ci, soreness: e.target.value })}><option value="">–</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></div>
+        <div><label>New pain this week?</label><input value={ci.pain} onChange={e => setCi({ ...ci, pain: e.target.value })} placeholder="blank if none" /></div>
       </div>
-      <div className="card">
-        <h3>Hand portions, translated</h3>
-        <p className="muted"><b>Palm of protein:</b> a piece the size and thickness of your palm, roughly 25 to 30 g of protein. Chicken, fish, lean beef, eggs, Greek yogurt, tofu.</p>
-        <p className="muted"><b>Fist of vegetables:</b> about one cup. Broccoli, peppers, greens, zucchini, anything colorful.</p>
-        <p className="muted"><b>Cupped hand of carbs:</b> what fits in one cupped hand, about half a cup cooked, or 20 to 30 g of carbs. Best picks: white or brown rice, potatoes, sweet potatoes, oats, quinoa, beans and lentils, and whole fruit. Save the starchy ones for the meal right after training, and skip liquid carbs like juice and soda.</p>
-        <p className="muted"><b>Thumb of fat:</b> the size of your whole thumb, about one tablespoon. Olive oil, nuts and nut butter, avocado.</p>
-        <p className="small">Your hand scales with your body, so portions scale automatically. No scale, no measuring cups. How-to videos link to Muscle &amp; Strength exercise guides; Protocol may earn a commission on purchases there.</p>
-      </div>
-      <div className="card">
-        <h3>Daily stack</h3>
-        <p className="muted">{plan.stack.join(' · ')}. Run new supplements past your physician.</p>
-      </div>
-      <div className="card">
-        <h3>Grocery list for the week</h3>
-        <p className="small">Built from your plan. Covers one person; adjust to appetite and skip what&apos;s already in the kitchen.</p>
-        <p className="muted">{plan.grocery.map(g => g[0] + ': ' + g[1]).join('. ')}</p>
-        <button className="btn ghost" style={{ marginLeft: 0 }} onClick={printGrocery}>Print / Save as PDF</button>
-      </div>
-      <div className="card line">
-        <h3>How this plan adjusts</h3>
-        <p className="muted">{plan.notes.join(' ')}</p>
-      </div>
+      <button className="btn accent block" onClick={submitCheckin}>Generate next week</button>
+      <button className="btn ghost block" onClick={() => setShowCheckin(false)}>Cancel</button>
+      {err && <div className="err">{err}</div>}
+    </div>
+  );
 
-      {!showCheckin ? (
-        <button className="btn accent" onClick={() => setShowCheckin(true)}>Sunday check-in</button>
-      ) : (
-        <div className="card">
-          <h3>Sunday check-in: 2 minutes</h3>
-          <div className="grid2">
-            <div><label>Morning weight, 2–3 day avg (lb)</label><input type="number" step="0.1" value={ci.weight} onChange={e => setCi({ ...ci, weight: e.target.value })} /></div>
-            <div><label>Waist at navel (in)</label><input type="number" step="0.1" value={ci.waist} onChange={e => setCi({ ...ci, waist: e.target.value })} /></div>
-            <div><label>Energy (1–5)</label><select value={ci.energy} onChange={e => setCi({ ...ci, energy: e.target.value })}><option value="">–</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></div>
-            <div><label>Sleep (1–5)</label><select value={ci.sleep} onChange={e => setCi({ ...ci, sleep: e.target.value })}><option value="">–</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></div>
-            <div><label>Soreness (1–5)</label><select value={ci.soreness} onChange={e => setCi({ ...ci, soreness: e.target.value })}><option value="">–</option>{[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}</select></div>
-            <div><label>New pain this week?</label><input value={ci.pain} onChange={e => setCi({ ...ci, pain: e.target.value })} placeholder="blank if none" /></div>
-          </div>
-          <button className="btn accent" onClick={submitCheckin}>Generate next week</button>
-          <button className="btn ghost" onClick={() => setShowCheckin(false)}>Cancel</button>
-          {err && <div className="err">{err}</div>}
+  const progressCard = (
+    <div className="card">
+      <h3>Your progress</h3>
+      {checkins.length < 2 ? (
+        <p className="muted">Log two Sunday check-ins and your trend lines show up here. Waist is the one that counts, so measure the same spot at the navel each week.</p>
+      ) : (() => {
+        const lab = c => new Date(c.created_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+        const waist = [{ name: 'Waist', color: '#0d9488', data: checkins.map(c => ({ v: +c.waist, label: lab(c) })) }];
+        const weight = [{ name: 'Weight', color: '#d97706', data: checkins.map(c => ({ v: +c.weight, label: lab(c) })) }];
+        const feel = [
+          { name: 'Energy', color: '#0d9488', data: checkins.map(c => ({ v: +c.energy, label: lab(c) })) },
+          { name: 'Sleep', color: '#7c3aed', data: checkins.map(c => ({ v: +c.sleep, label: lab(c) })) },
+        ];
+        return (
+          <>
+            <div className="chart-block"><div className="chart-cap">Waist · inches <span>the honest scoreboard</span></div><TrendChart series={waist} unit="in" /></div>
+            <div className="chart-block"><div className="chart-cap">Morning weight · lb</div><TrendChart series={weight} unit="lb" /></div>
+            <div className="chart-block"><div className="chart-cap">How you felt · 1–5</div><TrendChart series={feel} decimals={0} height={130} /></div>
+            <p className="small">Each point is a Sunday check-in. Hover a line to read the week&apos;s number.</p>
+          </>
+        );
+      })()}
+    </div>
+  );
+
+  return (
+    <div className="planapp">
+      <div className="appbar">
+        <div className="ab-left">
+          <span className="ab-brand">Protocol</span>
+          <span className="ab-week">Week {plan.week}{plan.isDeload ? ' · DL' : ''}</span>
         </div>
-      )}
-    </>
+        <button className="ab-avatar" onClick={() => setMenu(m => !m)} aria-label="Account menu">{initials}</button>
+        {menu && (
+          <div className="ab-menu" onMouseLeave={() => setMenu(false)}>
+            <button onClick={() => { setMenu(false); router.push('/onboard'); }}>Edit profile</button>
+            <button onClick={() => { setMenu(false); signOut(); }}>Sign out</button>
+          </div>
+        )}
+      </div>
+
+      <main className="screen">
+        {tab === 'today' && (
+          <>
+            <div className="today-hero">
+              <div className="kicker">{plan.name}, here&apos;s your week</div>
+              <h1 className="scr-h1">Week {plan.week}{plan.isDeload ? ' · Deload' : ''}</h1>
+              <div className="sub">{fmt(mon)} – {fmt(sun)}, {sun.getFullYear()}</div>
+              <div className="sub accentline">{phase}</div>
+            </div>
+
+            {isSunday && !showCheckin && (
+              <button className="btn accent block big" onClick={() => setShowCheckin(true)}>It&apos;s Sunday — do your 2-minute check-in</button>
+            )}
+            {showCheckin && checkinCard}
+
+            <div className="sec-label">Today&apos;s session</div>
+            {renderDay(todayDay, true)}
+
+            <div className="note">{plan.rirLine} Protein target: {plan.protein} g/day ({plan.palms.toLowerCase()}). {plan.steps}.</div>
+
+            <div className="sec-label">Your week</div>
+            {wkStrip(d => { setTab('plan'); setTimeout(() => document.getElementById(`day-${d}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); })}
+
+            {!isSunday && !showCheckin && (
+              <button className="btn ghost block" onClick={() => { setShowCheckin(true); setTab('progress'); }}>Log a check-in</button>
+            )}
+          </>
+        )}
+
+        {tab === 'plan' && (
+          <>
+            <div className="sec-label first">This week at a glance</div>
+            <div className="tiles">
+              <div className="tile"><div className="label">Lifting</div><div className="value">{plan.lifts} {plan.lifts === 1 ? 'DAY' : 'DAYS'}</div><div className="hint">{liftDayNames}</div></div>
+              <div className="tile"><div className="label">Sport</div><div className="value">{sportDays.length} {sportDays.length === 1 ? 'DAY' : 'DAYS'}</div><div className="hint">{sportDays.map(d => d.d).join(' · ') || 'add one anytime'}</div></div>
+              <div className="tile"><div className="label">Full rest</div><div className="value">SUN</div><div className="hint">{plan.isRebuild ? 'restorative yoga' : 'rest + check-in'}</div></div>
+              <div className="tile"><div className="label">Target pace</div><div className="value">{paceTile[0]}</div><div className="hint">{paceTile[1]}</div></div>
+            </div>
+
+            {wkStrip(d => document.getElementById(`day-${d}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))}
+
+            {plan.injuries.length > 0 && (
+              <div className="card">
+                <h3>Adjusted for your injuries</h3>
+                <p className="muted">Working around: {plan.injuries.join(', ')}. Swapped movements are marked in orange. Pain-free range only; anything new goes in Sunday&apos;s check-in. Persistent pain is physician territory.</p>
+              </div>
+            )}
+
+            <div className="sec-label">Daily sessions</div>
+            {plan.days.map(x => renderDay(x, x.d === todayDay.d))}
+
+            <div className="card line">
+              <h3>How this plan adjusts</h3>
+              <p className="muted">{plan.notes.join(' ')}</p>
+            </div>
+          </>
+        )}
+
+        {tab === 'nutrition' && (
+          <>
+            <div className="sec-label first">Eat with your hands</div>
+            <div className="card">
+              <h3>Your plate, every meal</h3>
+              <p className="muted">{plan.plate}</p>
+            </div>
+            <div className="card">
+              <h3>Hand portions, translated</h3>
+              <p className="muted"><b>Palm of protein:</b> a piece the size and thickness of your palm, roughly 25 to 30 g of protein. Chicken, fish, lean beef, eggs, Greek yogurt, tofu.</p>
+              <p className="muted"><b>Fist of vegetables:</b> about one cup. Broccoli, peppers, greens, zucchini, anything colorful.</p>
+              <p className="muted"><b>Cupped hand of carbs:</b> what fits in one cupped hand, about half a cup cooked, or 20 to 30 g of carbs. Best picks: white or brown rice, potatoes, sweet potatoes, oats, quinoa, beans and lentils, and whole fruit. Save the starchy ones for the meal right after training, and skip liquid carbs like juice and soda.</p>
+              <p className="muted"><b>Thumb of fat:</b> the size of your whole thumb, about one tablespoon. Olive oil, nuts and nut butter, avocado.</p>
+              <p className="small">Your hand scales with your body, so portions scale automatically. No scale, no measuring cups. How-to videos link to Muscle &amp; Strength exercise guides; Protocol may earn a commission on purchases there.</p>
+            </div>
+            <div className="card">
+              <h3>Daily stack</h3>
+              <p className="muted">{plan.stack.join(' · ')}. Run new supplements past your physician.</p>
+            </div>
+            <div className="card">
+              <h3>Grocery list for the week</h3>
+              <p className="small">Built from your plan. Covers one person; adjust to appetite and skip what&apos;s already in the kitchen.</p>
+              <p className="muted">{plan.grocery.map(g => g[0] + ': ' + g[1]).join('. ')}</p>
+              <button className="btn ghost block" onClick={printGrocery}>Print / Save as PDF</button>
+            </div>
+          </>
+        )}
+
+        {tab === 'progress' && (
+          <>
+            <div className="sec-label first">Your numbers</div>
+            {dW !== null ? (
+              <div className="tiles">
+                <div className="tile"><div className="label">Weight change</div><div className={`value ${+dW <= 0 ? 'up' : 'down'}`}>{+dW > 0 ? '+' : ''}{dW} LB</div><div className="hint">since first check-in</div></div>
+                <div className="tile"><div className="label">Waist change</div><div className={`value ${+dWa <= 0 ? 'up' : 'down'}`}>{+dWa > 0 ? '+' : ''}{dWa} IN</div><div className="hint">the honest scoreboard</div></div>
+                <div className="tile"><div className="label">Check-ins</div><div className="value">{checkins.length}</div><div className="hint">weeks logged</div></div>
+              </div>
+            ) : (
+              <p className="muted small" style={{ marginTop: 4 }}>Log two check-ins to see your change since week one.</p>
+            )}
+
+            {progressCard}
+
+            <div className="sec-label">Weekly check-in</div>
+            {showCheckin ? checkinCard : (
+              <button className="btn accent block big" onClick={() => setShowCheckin(true)}>{isSunday ? "It's Sunday — start your check-in" : 'Start a check-in'}</button>
+            )}
+          </>
+        )}
+
+        <div className="appfoot">PROTOCOL by MAAN.life · rules-based engine · not medical advice. Clear new programs with your physician.</div>
+      </main>
+
+      <nav className="tabbar">
+        {TABS.map(t => (
+          <button key={t.id} className={`tab${tab === t.id ? ' active' : ''}`} onClick={() => { setTab(t.id); window.scrollTo(0, 0); }}>
+            {ICON[t.id]}
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
   );
 }
