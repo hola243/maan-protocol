@@ -7,6 +7,90 @@ import { videoUrlFor } from '@/lib/videos';
 
 const DOT = { sport: 'var(--green)', lift: 'var(--yellow)', move: 'var(--move)', rest: 'var(--red)', off: '#9aa0a6' };
 
+// Program week anchored to a start date, so the dashboard tracks the calendar
+// (same basis as the Slack feed) instead of only advancing on in-app check-ins.
+function programWeekFrom(startISO) {
+  if (!startISO) return null;
+  const start = new Date(startISO);
+  if (isNaN(start)) return null;
+  const days = Math.floor((Date.now() - start.getTime()) / 86400000);
+  return Math.max(1, Math.floor(days / 7) + 1);
+}
+
+// Small, dependency-free line chart. One y-axis per chart (never dual-axis):
+// series sharing this chart must share a scale. Renders on a white card.
+function TrendChart({ series, unit, decimals = 1, height = 150, invertGood = false }) {
+  const [hover, setHover] = useState(null);
+  const W = 320, H = height, padL = 34, padR = 12, padT = 12, padB = 22;
+  const n = series[0].data.length;
+  const allV = series.flatMap(s => s.data.map(d => d.v));
+  let lo = Math.min(...allV), hi = Math.max(...allV);
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.15; lo -= pad; hi += pad;
+  const x = i => padL + (n <= 1 ? 0 : (i / (n - 1)) * (W - padL - padR));
+  const y = v => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+  const fmt = v => v.toFixed(decimals);
+  const ticks = [hi, (hi + lo) / 2, lo];
+
+  return (
+    <div style={{ marginTop: 6 }}>
+      {series.length > 1 && (
+        <div style={{ display: 'flex', gap: 16, margin: '2px 0 6px', flexWrap: 'wrap' }}>
+          {series.map(s => (
+            <span key={s.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--card-ink2)', fontWeight: 700 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, display: 'inline-block' }} />{s.name}
+            </span>
+          ))}
+        </div>
+      )}
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', overflow: 'visible' }}
+        onMouseLeave={() => setHover(null)}
+        onMouseMove={e => {
+          const r = e.currentTarget.getBoundingClientRect();
+          const px = ((e.clientX - r.left) / r.width) * W;
+          let idx = 0, best = Infinity;
+          for (let i = 0; i < n; i++) { const d = Math.abs(x(i) - px); if (d < best) { best = d; idx = i; } }
+          setHover(idx);
+        }}>
+        {ticks.map((t, k) => (
+          <g key={k}>
+            <line x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--card-line)" strokeWidth="1" />
+            <text x={padL - 6} y={y(t) + 3} textAnchor="end" fontSize="9.5" fill="var(--card-ink3)">{fmt(t)}</text>
+          </g>
+        ))}
+        {hover != null && n > 1 && (
+          <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="var(--card-ink3)" strokeWidth="1" strokeDasharray="3 3" />
+        )}
+        {series.map(s => {
+          const path = s.data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d.v)}`).join(' ');
+          const lastI = n - 1;
+          return (
+            <g key={s.name}>
+              <path d={path} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+              {s.data.map((d, i) => (
+                <circle key={i} cx={x(i)} cy={y(d.v)} r={hover === i ? 4.5 : 3} fill={s.color}
+                  stroke="#fff" strokeWidth={hover === i ? 1.5 : 1} />
+              ))}
+              <text x={x(lastI)} y={y(s.data[lastI].v) - 10} textAnchor="end" fontSize="10.5" fontWeight="800" fill={s.color}
+                stroke="#fff" strokeWidth="3" style={{ paintOrder: 'stroke' }}>
+                {fmt(s.data[lastI].v)}{unit ? ` ${unit}` : ''}
+              </text>
+            </g>
+          );
+        })}
+        <text x={padL} y={H - 6} textAnchor="start" fontSize="9.5" fill="var(--card-ink3)">{series[0].data[0].label}</text>
+        <text x={W - padR} y={H - 6} textAnchor="end" fontSize="9.5" fill="var(--card-ink3)">{series[0].data[n - 1].label}</text>
+        {hover != null && (
+          <text x={Math.min(Math.max(x(hover), padL + 30), W - padR - 30)} y={padT - 2} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--card-ink)"
+            stroke="#fff" strokeWidth="3" style={{ paintOrder: 'stroke' }}>
+            {series.map(s => `${series.length > 1 ? s.name[0] + ' ' : ''}${fmt(s.data[hover].v)}`).join('   ')}
+          </text>
+        )}
+      </svg>
+    </div>
+  );
+}
+
 export default function PlanPage() {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
@@ -24,7 +108,8 @@ export default function PlanPage() {
     const { data: cs } = await supabase.from('checkins').select('*').eq('user_id', u.user.id).order('created_at');
     setProfile(p);
     setCheckins(cs || []);
-    setPlan(buildWeek(toEngineProfile(p), p.state || { week: 1 }));
+    const wk = programWeekFrom(p.program_start || p.created_at) || (p.state?.week || 1);
+    setPlan(buildWeek(toEngineProfile(p), { ...(p.state || {}), week: wk }));
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
@@ -47,7 +132,9 @@ export default function PlanPage() {
     const prevEntry = checkins.length ? {
       weight: +checkins[checkins.length - 1].weight, waist: +checkins[checkins.length - 1].waist,
     } : null;
+    const wk = programWeekFrom(profile.program_start || profile.created_at) || (profile.state?.week || 1);
     const newState = applyCheckin(profile.state || { week: 1 }, prevEntry, entry, profile.objective);
+    newState.week = wk + 1; // keep state aligned with the calendar-anchored week
     const { error: e1 } = await supabase.from('checkins').insert({ user_id: profile.id, ...entry });
     const { error: e2 } = await supabase.from('profiles').update({ state: newState }).eq('id', profile.id);
     if (e1 || e2) { setErr((e1 || e2).message); return; }
@@ -120,6 +207,29 @@ export default function PlanPage() {
           <div className="tile"><div className="label">Check-ins</div><div className="value">{checkins.length}</div><div className="hint">weeks logged</div></div>
         </div>
       )}
+
+      <div className="card">
+        <h3>Your progress</h3>
+        {checkins.length < 2 ? (
+          <p className="muted">Log two Sunday check-ins and your trend lines show up here. Waist is the one that counts, so measure the same spot at the navel each week.</p>
+        ) : (() => {
+          const lab = c => new Date(c.created_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+          const waist = [{ name: 'Waist', color: '#0d9488', data: checkins.map(c => ({ v: +c.waist, label: lab(c) })) }];
+          const weight = [{ name: 'Weight', color: '#d97706', data: checkins.map(c => ({ v: +c.weight, label: lab(c) })) }];
+          const feel = [
+            { name: 'Energy', color: '#0d9488', data: checkins.map(c => ({ v: +c.energy, label: lab(c) })) },
+            { name: 'Sleep', color: '#7c3aed', data: checkins.map(c => ({ v: +c.sleep, label: lab(c) })) },
+          ];
+          return (
+            <>
+              <div className="chart-block"><div className="chart-cap">Waist · inches <span>the honest scoreboard</span></div><TrendChart series={waist} unit="in" /></div>
+              <div className="chart-block"><div className="chart-cap">Morning weight · lb</div><TrendChart series={weight} unit="lb" /></div>
+              <div className="chart-block"><div className="chart-cap">How you felt · 1–5</div><TrendChart series={feel} decimals={0} height={130} /></div>
+              <p className="small">Each point is a Sunday check-in. Hover a line to read the week&apos;s number.</p>
+            </>
+          );
+        })()}
+      </div>
 
       <div className="wkstrip">
         {plan.days.map(x => (
