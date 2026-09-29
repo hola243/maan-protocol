@@ -18,6 +18,7 @@ create table if not exists profiles (
   slack_daily boolean default false,
   slack_handle text default '',
   state jsonb default '{"week":1}'::jsonb,
+  program_start date default current_date,
   created_at timestamptz default now()
 );
 
