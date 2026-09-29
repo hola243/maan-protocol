@@ -118,3 +118,41 @@ a.vid:hover{background:var(--accent);color:var(--accent-ink);border-color:var(--
 .chart-block{margin:16px 0}
 .chart-cap{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--card-ink2);margin-bottom:2px}
 .chart-cap span{font-weight:600;text-transform:none;letter-spacing:0;color:var(--card-ink3);margin-left:6px}
+
+/* ---- app shell: tabbed navigation ---- */
+.planapp{max-width:480px;margin:0 auto}
+.planapp + footer{display:none}
+
+.appbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 2px 12px;background:linear-gradient(180deg,var(--bg) 72%,rgba(11,11,12,0))}
+.ab-left{display:flex;align-items:baseline;gap:10px}
+.ab-brand{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.5px;text-transform:uppercase}
+.ab-week{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.ab-avatar{width:34px;height:34px;border-radius:50%;background:var(--card);color:var(--card-ink);border:none;font-weight:800;font-size:14px;cursor:pointer;flex:none}
+.ab-menu{position:absolute;top:52px;right:2px;background:var(--card);border-radius:14px;padding:6px;box-shadow:0 10px 28px rgba(0,0,0,.45);z-index:60;min-width:150px}
+.ab-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--card-ink);font-size:14px;font-weight:600;padding:10px 12px;border-radius:9px;cursor:pointer}
+.ab-menu button:hover{background:var(--card-fill)}
+
+.screen{padding-bottom:98px;min-height:72vh}
+.scr-h1{font-family:var(--display);font-weight:400;font-size:44px;text-transform:uppercase;line-height:.98;margin-top:4px}
+.today-hero{padding:6px 0 8px}
+.today-hero .kicker{color:var(--accent)}
+.sub.accentline{color:var(--accent);font-weight:700;margin-top:2px}
+
+.sec-label{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:24px 0 10px}
+.sec-label.first{margin-top:8px}
+
+.btn.block{display:block;width:100%;margin-left:0;text-align:center}
+.btn.big{padding:17px 20px;font-size:16px}
+.btn.block + .btn.block{margin-top:8px}
+
+.card.day.istoday{outline:2px solid var(--accent);outline-offset:0}
+.todaytag{display:inline-block;margin-top:6px;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);padding:3px 8px;border-radius:999px}
+.wkday.now{outline:2px solid var(--accent)}
+
+.appfoot{color:var(--ink3);font-size:11px;line-height:1.6;margin:28px 4px 6px;text-align:center}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;background:rgba(17,18,20,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid #23262a;padding-bottom:env(safe-area-inset-bottom,0)}
+.tabbar .tab{flex:1;max-width:120px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--ink3);font-size:11px;font-weight:700;letter-spacing:.02em;padding:9px 4px 8px;cursor:pointer;transition:color .12s ease}
+.tabbar .tab.active{color:var(--accent)}
+.tabbar .tab:active{transform:translateY(1px)}
+.tabbar .tab svg{display:block}
