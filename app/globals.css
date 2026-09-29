@@ -113,3 +113,8 @@ a.vid:hover{background:var(--accent);color:var(--accent-ink);border-color:var(--
   .sched-row select{min-width:120px}
   .meal .ml{width:66px}
 }
+
+/* progress charts */
+.chart-block{margin:16px 0}
+.chart-cap{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--card-ink2);margin-bottom:2px}
+.chart-cap span{font-weight:600;text-transform:none;letter-spacing:0;color:var(--card-ink3);margin-left:6px}
