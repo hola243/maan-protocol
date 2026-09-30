@@ -92,10 +92,10 @@ function TrendChart({ series, unit, decimals = 1, height = 150 }) {
 }
 
 const ICON = {
-  today: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19" /></svg>,
-  plan: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5l11 11M4 8l-1 1 3 3M20 16l1-1-3-3M8 4L7 3 4 6l1 1M16 20l1 1 3-3-1-1" /></svg>,
-  nutrition: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3v7a2 2 0 0 0 2 2h0V3M6 12v9M18 3c-1.5 0-3 2-3 5s1.5 4 3 4v9" /></svg>,
-  progress: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 5-7" /></svg>,
+  today: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4.4" fill="currentColor" stroke="none" /><path d="M12 1.5v2.6M12 19.8v2.7M1.5 12h2.6M19.8 12h2.7M4.4 4.4l1.9 1.9M17.7 17.7l1.9 1.9M19.6 4.4l-1.9 1.9M6.3 17.7l-1.9 1.9" /></svg>,
+  plan: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="2.3" y1="12" x2="21.7" y2="12" /><rect x="3.4" y="7.3" width="2.9" height="9.4" rx="1" fill="currentColor" stroke="none" /><rect x="6.9" y="9.2" width="2.2" height="5.6" rx="1" fill="currentColor" stroke="none" /><rect x="14.9" y="9.2" width="2.2" height="5.6" rx="1" fill="currentColor" stroke="none" /><rect x="17.7" y="7.3" width="2.9" height="9.4" rx="1" fill="currentColor" stroke="none" /></svg>,
+  nutrition: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2.8v4.4M8.5 2.8v4.4M11 2.8v4.4" /><path d="M6 7.2h5" /><path d="M8.5 7.2V21.2" /><path d="M16.2 2.8C13.6 4.2 13.6 9.6 16.2 11.2Z" fill="currentColor" stroke="currentColor" /><path d="M16.2 11.2V21.2" /></svg>,
+  progress: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="21" x2="21.5" y2="21" /><rect x="4.4" y="13.6" width="3.4" height="6.2" rx="1" fill="currentColor" stroke="none" /><rect x="10.3" y="9.4" width="3.4" height="10.4" rx="1" fill="currentColor" stroke="none" /><rect x="16.2" y="5" width="3.4" height="14.8" rx="1" fill="currentColor" stroke="none" /></svg>,
 };
 const TABS = [
   { id: 'today', label: 'Today' },
