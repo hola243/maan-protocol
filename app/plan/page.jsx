@@ -92,10 +92,10 @@ function TrendChart({ series, unit, decimals = 1, height = 150 }) {
 }
 
 const ICON = {
-  today: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4.4" fill="currentColor" stroke="none" /><path d="M12 1.5v2.6M12 19.8v2.7M1.5 12h2.6M19.8 12h2.7M4.4 4.4l1.9 1.9M17.7 17.7l1.9 1.9M19.6 4.4l-1.9 1.9M6.3 17.7l-1.9 1.9" /></svg>,
-  plan: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="2.3" y1="12" x2="21.7" y2="12" /><rect x="3.4" y="7.3" width="2.9" height="9.4" rx="1" fill="currentColor" stroke="none" /><rect x="6.9" y="9.2" width="2.2" height="5.6" rx="1" fill="currentColor" stroke="none" /><rect x="14.9" y="9.2" width="2.2" height="5.6" rx="1" fill="currentColor" stroke="none" /><rect x="17.7" y="7.3" width="2.9" height="9.4" rx="1" fill="currentColor" stroke="none" /></svg>,
-  nutrition: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2.8v4.4M8.5 2.8v4.4M11 2.8v4.4" /><path d="M6 7.2h5" /><path d="M8.5 7.2V21.2" /><path d="M16.2 2.8C13.6 4.2 13.6 9.6 16.2 11.2Z" fill="currentColor" stroke="currentColor" /><path d="M16.2 11.2V21.2" /></svg>,
-  progress: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="21" x2="21.5" y2="21" /><rect x="4.4" y="13.6" width="3.4" height="6.2" rx="1" fill="currentColor" stroke="none" /><rect x="10.3" y="9.4" width="3.4" height="10.4" rx="1" fill="currentColor" stroke="none" /><rect x="16.2" y="5" width="3.4" height="14.8" rx="1" fill="currentColor" stroke="none" /></svg>,
+  today: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3.9" fill="currentColor" stroke="none" /><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4M5.8 5.8l1.7 1.7M16.5 16.5l1.7 1.7M18.2 5.8l-1.7 1.7M7.5 16.5l-1.7 1.7" /></svg>,
+  plan: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="2" y1="12" x2="22" y2="12" /><rect x="2.6" y="5" width="3" height="14" rx="1.2" fill="currentColor" stroke="none" /><rect x="6.3" y="7.3" width="2.3" height="9.4" rx="1" fill="currentColor" stroke="none" /><rect x="15.4" y="7.3" width="2.3" height="9.4" rx="1" fill="currentColor" stroke="none" /><rect x="18.4" y="5" width="3" height="14" rx="1.2" fill="currentColor" stroke="none" /></svg>,
+  nutrition: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5.5 4v4M7.3 4v4M9.1 4v4" /><path d="M5.5 8h3.6" /><path d="M7.3 8V20" /><path d="M16 4C13.3 5.3 13.3 10.3 16 12Z" fill="currentColor" stroke="currentColor" /><path d="M16 12V20" /></svg>,
+  progress: <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="3.2" y1="18.4" x2="20.8" y2="18.4" /><rect x="4.6" y="12.3" width="3.4" height="6.1" rx="1" fill="currentColor" stroke="none" /><rect x="10.3" y="8.7" width="3.4" height="9.7" rx="1" fill="currentColor" stroke="none" /><rect x="16" y="5.1" width="3.4" height="13.3" rx="1" fill="currentColor" stroke="none" /></svg>,
 };
 const TABS = [
   { id: 'today', label: 'Today' },
@@ -407,12 +407,14 @@ export default function PlanPage() {
       </main>
 
       <nav className="tabbar">
-        {TABS.map(t => (
-          <button key={t.id} className={`tab${tab === t.id ? ' active' : ''}`} onClick={() => { setTab(t.id); window.scrollTo(0, 0); }}>
-            {ICON[t.id]}
-            <span>{t.label}</span>
-          </button>
-        ))}
+        <div className="tabrow">
+          {TABS.map(t => (
+            <button key={t.id} className={`tab${tab === t.id ? ' active' : ''}`} onClick={() => { setTab(t.id); window.scrollTo(0, 0); }}>
+              <span className="tabicon">{ICON[t.id]}</span>
+              <span className="tablabel">{t.label}</span>
+            </button>
+          ))}
+        </div>
       </nav>
     </div>
   );
